@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="tah-red5chat-mod Project" default="compile" basedir=".">
+	  <!-- set global properties for this build -->
+	  <property name="BASE" location="/base"/>
+	  
+	  <property name="src" location="./WEB-INF/src"/>
+	  <property name="build" location="./WEB-INF/classes"/>	  
+	  
+<target name="clean" description="Clean output directories">
+    <!-- Delete the ${build} and ${dist} directory trees -->
+    <delete dir="${build}"/>
+	<mkdir dir="${build}"/>
+</target>
+
+<target name="compile" depends="clean">
+	<javac srcdir="${src}" destdir="${build}" >
+		<classpath>
+			<pathelement location="${BASE}/servers/red5-0.9.1/red5.jar" />
+			<pathelement location="${BASE}/servers/red5-0.9.1/lib/spring-core-3.0.2.jar" />
+			<fileset dir="./lib/commons-logging-1.1.1">
+        		<include name="**/*.jar"/>
+      		</fileset>
+		</classpath>
+	</javac>
+</target>
+
+</project>
