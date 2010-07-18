@@ -29,17 +29,12 @@ public class Application extends MultiThreadedApplicationAdapter
 
     public boolean connect( IConnection conn , IScope scope, Object[] params )
     {
-    	log.error( "scope: " + scope.toString());
-    	log.error( "conn: " + conn.toString());
-    	log.error( "client: " + conn.getClient().toString());
-    	
     	String userid = params[0].toString();
 		String username = params[1].toString();
 		String topicid = params[2].toString();
 		String topic = params[3].toString();
 		
-		log.error( "params: " + userid + username + topicid + topic);
-    	
+		
 		ISharedObject so = getSharedObject(scope, "talkerListSO-" + topicid); 
 		ArrayList<String[]> talkerListArray = new ArrayList<String[]>();
 	    
@@ -97,9 +92,7 @@ public class Application extends MultiThreadedApplicationAdapter
 	 * send a public message msg from from_pseudo to ALL users
 	 */
 	public void send_msgtoroom(String username, String topicid, String msg) {
-		log.error("Server msg to room");
-		log.error("Scope: " + scope.toString());
-        ServiceUtils.invokeOnAllConnections (getChildScope(topicid), "receivePublicMsg", new Object[] {username, msg} );
+		ServiceUtils.invokeOnAllConnections (getChildScope(topicid), "receivePublicMsg", new Object[] {username, msg} );
         // store message in database - user id, topicid, message
 	}
 }
