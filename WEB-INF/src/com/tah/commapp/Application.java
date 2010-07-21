@@ -1,5 +1,6 @@
 package com.tah.commapp;
 
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 
 import org.apache.commons.logging.Log;
@@ -29,7 +30,7 @@ public class Application extends MultiThreadedApplicationAdapter
 
     public boolean connect( IConnection conn , IScope scope, Object[] params )
     {
-    	String userid = params[0].toString();
+		String userid = params[0].toString();
 		String username = params[1].toString();
 		String topicid = params[2].toString();
 		String topic = params[3].toString();
@@ -57,6 +58,18 @@ public class Application extends MultiThreadedApplicationAdapter
 			so.setAttribute("talkerListAC", talkerListArray);
 		}
 		
+		/*********************************************************************
+		*
+		*Target: new SharedObject for video list
+		* Add by: Situ
+		****************/
+		
+		so = getSharedObject(scope, "videoListSO-"+ topicid);
+		if(so == null){
+			//create shared object
+			createSharedObject(scope, "videoListSO-"+ topicid, false);
+		}
+		/********************************************************************/
 		// add user to database to track live conversations - userid, topicid
 		
         return true;
@@ -73,6 +86,14 @@ public class Application extends MultiThreadedApplicationAdapter
 		ISharedObject so = getSharedObject(scope, "talkerListSO-" + scope.getName());
 		ArrayList<String[]> talkerListArray = new ArrayList<String[]>();
 	    talkerListArray = (ArrayList<String[]>)so.getAttribute("talkerListAC");
+		
+		
+		/*********************************************************************
+		* Target: Remove the user from video list before disconnect
+		* Added by: Situ
+		******************/
+		removeVideoList(conn.getClient().getId(), scope.getName());
+		/*********************************************************************/
 		
 	    for (int i = 0; i < talkerListArray.size(); i++) {
 	    	if((talkerListArray.get(i))[0] == conn.getClient().getId()){
@@ -94,5 +115,41 @@ public class Application extends MultiThreadedApplicationAdapter
 	public void send_msgtoroom(String username, String topicid, String msg) {
 		ServiceUtils.invokeOnAllConnections (getChildScope(topicid), "receivePublicMsg", new Object[] {username, msg} );
         // store message in database - user id, topicid, message
+	}
+	
+	/**************************************************************
+	 *            Update videoList: insert new client ID 
+	 **************************************************************/
+	public void addVideoList(String clientID, String topicID){
+		log.error("addVideoList at server side called ...");
+		IScope scope = getChildScope(topicID);
+		String shareObjectName = "videoListSO-"+topicID;
+		String videoListName = "videoListAC";
+		ArrayList<String> videoList = null;
+		ISharedObject so = getSharedObject(scope, shareObjectName); 
+		
+		videoList = (ArrayList<String>) so.getAttribute(videoListName);
+		if(videoList == null){
+			videoList = new ArrayList<String>();
+			so.setAttribute(videoListName, videoList);
+		}
+		videoList.add(clientID);
+		so.setAttribute(videoListName, videoList);
+	}
+	
+	public void removeVideoList(String clientID, String topicID){
+		IScope scope = getChildScope(topicID);
+		String shareObjectName = "videoListSO-"+topicID;
+		String videoListName = "videoListAC";
+		ArrayList<String> videoList = new ArrayList<String>();
+		ISharedObject so = getSharedObject(scope, shareObjectName); 
+				
+		videoList = (ArrayList<String>) so.getAttribute(videoListName);
+		videoList.remove(clientID);
+		so.setAttribute(videoListName, videoList);
+	}
+	
+	public void testMethod(String clientID, String topicID){
+		log.error("Client ID is: " + clientID+"  Topic ID is: "+ topicID);
 	}
 }
