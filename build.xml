@@ -16,6 +16,7 @@
 	<javac srcdir="${src}" destdir="${build}" >
 		<classpath>
 			<pathelement location="${BASE}/servers/red5-0.9.1/red5.jar" />
+			<pathelement location="./lib/mongo-2.0.jar" />
 			<pathelement location="${BASE}/servers/red5-0.9.1/lib/spring-core-3.0.0.jar" />
 			<fileset dir="./lib/commons-logging-1.1.1">
         		<include name="**/*.jar"/>
