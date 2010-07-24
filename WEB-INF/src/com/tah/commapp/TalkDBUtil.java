@@ -36,26 +36,26 @@ public class TalkDBUtil {
 	
 	
 	/* ------------- Talker --------------- */
-	public static void talkerConnected(String topicId, String talkerId, String talkerName) {
-		if (isEmptyTopic(topicId)) {
-			saveTopicAction(topicId, "started");
+	public static void talkerConnected(int tid, String talkerId, String talkerName) {
+		if (isEmptyTopic(tid)) {
+			saveTopicAction(tid, "started");
 		}
 		
-		saveConnectionAction(topicId, talkerId, "joined");
-		updateLiveTalkers(topicId, talkerId, talkerName, true);
+		saveConnectionAction(tid, talkerId, "joined");
+		updateLiveTalkers(tid, talkerId, talkerName, true);
 	}
 	
-	public static void talkerDisconnected(String topicId, String talkerId, String talkerName) {
-		saveConnectionAction(topicId, talkerId, "left");
-		updateLiveTalkers(topicId, talkerId, talkerName, false);
+	public static void talkerDisconnected(int tid, String talkerId, String talkerName) {
+		saveConnectionAction(tid, talkerId, "left");
+		updateLiveTalkers(tid, talkerId, talkerName, false);
 		
-		if (isEmptyTopic(topicId)) {
-			saveTopicAction(topicId, "finished");
+		if (isEmptyTopic(tid)) {
+			saveTopicAction(tid, "finished");
 		}
 	}
 	
 	//"talkers" - array of currently live talkers in this conversation  - [user id, userName]
-	private static void updateLiveTalkers(String topicId, String talkerId, 
+	private static void updateLiveTalkers(int tid, String talkerId, 
 			String talkerName, boolean connected) {
 		DBCollection topicsColl = getDB().getCollection("topics");
 		
@@ -65,7 +65,7 @@ public class TalkDBUtil {
 			.add("uname", talkerName)
 			.get();
 		
-		DBObject tidDBObject = new BasicDBObject("_id", new ObjectId(topicId));
+		DBObject tidDBObject = new BasicDBObject("tid", tid);
 		String operation = "$pull"; //for disconnected
 		if (connected) {
 			operation = "$push";
@@ -75,7 +75,7 @@ public class TalkDBUtil {
 	}
 	
 	//"actions" - array of different actions in this talk - user joined, left, etc
-	private static void saveConnectionAction(String topicId, String talkerId, String action) {
+	private static void saveConnectionAction(int tid, String talkerId, String action) {
 		DBCollection topicsColl = getDB().getCollection("topics");
 		
 		DBRef talkerRef = new DBRef(getDB(), "talkers", new ObjectId(talkerId));
@@ -85,13 +85,13 @@ public class TalkDBUtil {
 			.add("time", new Date())
 			.get();
 		
-		DBObject tidDBObject = new BasicDBObject("_id", new ObjectId(topicId));
+		DBObject tidDBObject = new BasicDBObject("tid", tid);
 		topicsColl.update(tidDBObject, 
 				new BasicDBObject("$push", new BasicDBObject("actions", actionDBObject)));
 	}
 	
 	/* --------------- Conversation/Topic ----------------- */
-	public static void saveComment(String topicId, String talkerId, String talkerName, String text) {
+	public static void saveComment(int tid, String talkerId, String text) {
 		DBCollection topicsColl = getDB().getCollection("topics");
 		
 		DBRef talkerRef = new DBRef(getDB(), "talkers", new ObjectId(talkerId));
@@ -101,16 +101,16 @@ public class TalkDBUtil {
 			.add("cr_date", new Date())
 			.get();
 		
-		DBObject tidDBObject = new BasicDBObject("_id", new ObjectId(topicId));
+		DBObject tidDBObject = new BasicDBObject("tid", tid);
 		topicsColl.update(tidDBObject, 
 				new BasicDBObject("$push", new BasicDBObject("comments", commentDBObject)));
 	}
 	
-	private static boolean isEmptyTopic(String topicId) {
+	private static boolean isEmptyTopic(int tid) {
 		DBCollection topicsColl = getDB().getCollection("topics");
 		
 		DBObject query = BasicDBObjectBuilder.start()
-			.add("_id", new ObjectId(topicId))
+			.add("tid", tid)
 			.get();
 			
 		DBObject topicDBObject = topicsColl.findOne(query, new BasicDBObject("talkers", ""));
@@ -122,7 +122,7 @@ public class TalkDBUtil {
 		return false;
 	}
 	
-	private static void saveTopicAction(String topicId, String action) {
+	private static void saveTopicAction(int tid, String action) {
 		DBCollection topicsColl = getDB().getCollection("topics");
 		
 		DBObject actionDBObject = BasicDBObjectBuilder.start()
@@ -130,16 +130,17 @@ public class TalkDBUtil {
 			.add("time", new Date())
 			.get();
 		
-		DBObject tidDBObject = new BasicDBObject("_id", new ObjectId(topicId));
+		DBObject tidDBObject = new BasicDBObject("tid", tid);
 		topicsColl.update(tidDBObject, 
 				new BasicDBObject("$push", new BasicDBObject("topic_actions", actionDBObject)));
 	}
 	
 	public static void main(String[] args) {
-//		TalkDBUtil.talkerConnected("4c31e7a14e08f30586b71a50", "4c2cb43160adf3055c97d061", "kangaroo");
-//		TalkDBUtil.talkerDisconnected("4c31e7a14e08f30586b71a50", "4c2cb43160adf3055c97d061", "kangaroo");
-//		TalkDBUtil.talkerDisconnected("4c31e7a14e08f30586b71a50", "4c400cb43a10f305774734e8", "wewewe");
-//		TalkDBUtil.saveComment("4c31e7a14e08f30586b71a50", "4c2cb43160adf3055c97d061", "First test comment :)");
+//		TalkDBUtil.talkerConnected(1, "4c2cb43160adf3055c97d061", "kangaroo");
+//		TalkDBUtil.talkerConnected(1, "4c400cb43a10f305774734e8", "wewewe");
+//		TalkDBUtil.talkerDisconnected(1, "4c2cb43160adf3055c97d061", "kangaroo");
+//		TalkDBUtil.talkerDisconnected(1, "4c400cb43a10f305774734e8", "wewewe");
+//		TalkDBUtil.saveComment(1, "4c2cb43160adf3055c97d061", "First test comment :)");
 		
 //		TalkDBUtil.updateLiveTalkers("4c31e7a14e08f30586b71a50", "4c2cb43160adf3055c97d061", "kangaroo", false);
 		
