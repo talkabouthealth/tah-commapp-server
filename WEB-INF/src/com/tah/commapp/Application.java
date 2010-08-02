@@ -1,6 +1,5 @@
 package com.tah.commapp;
 
-import java.lang.reflect.Array;
 import java.util.ArrayList;
 
 import org.apache.commons.logging.Log;
@@ -17,7 +16,7 @@ public class Application extends MultiThreadedApplicationAdapter
 {
     private static final Log log = LogFactory.getLog( Application.class );
     
-    public boolean appStart ( )
+    /*public boolean appStart ( )
     {
     	log.error("***App Start***");
         return true;
@@ -26,7 +25,7 @@ public class Application extends MultiThreadedApplicationAdapter
     public void appStop ( )
     {
         log.error( "Red5First.appStop" );
-    }
+    }*/
 
     public boolean connect( IConnection conn , IScope scope, Object[] params )
     {
@@ -34,7 +33,8 @@ public class Application extends MultiThreadedApplicationAdapter
 		String username = params[1].toString();
 		String topicid = params[2].toString();
 		String topic = params[3].toString();
-		
+		log.error( "TopicID: " + topicid);
+    	
 		
 		ISharedObject so = getSharedObject(scope, "talkerListSO-" + topicid); 
 		ArrayList<String[]> talkerListArray = new ArrayList<String[]>();
@@ -57,7 +57,7 @@ public class Application extends MultiThreadedApplicationAdapter
 			
 			so.setAttribute("talkerListAC", talkerListArray);
 		}
-		
+    	
 		/*********************************************************************
 		*
 		*Target: new SharedObject for video list
@@ -71,50 +71,54 @@ public class Application extends MultiThreadedApplicationAdapter
 		}
 		/********************************************************************/
 		// add user to database to track live conversations - userid, topicid
+		TalkDBUtil.talkerConnected(Integer.parseInt(topicid), userid, username);
+		conn.setAttribute("userid", userid);
+		conn.setAttribute("username", username);
+		conn.setAttribute("topicid", topicid);
 		
         return true;
     }
-
     /*
 	 * (non-Javadoc)
 	 * @see org.red5.server.adapter.ApplicationAdapter#disconnect(org.red5.server.api.IConnection, org.red5.server.api.IScope)
 	 * disconnect an user form the chat and notify all others users 
 	 */
 	public void disconnect(IConnection conn, IScope scope) {       
-		
+		// remove user from database
+	    TalkDBUtil.talkerDisconnected(Integer.parseInt((String)conn.getAttribute("topicid")), (String)conn.getAttribute("userid"), (String)conn.getAttribute("username"));
+	    
 		// get shared object
 		ISharedObject so = getSharedObject(scope, "talkerListSO-" + scope.getName());
-		ArrayList<String[]> talkerListArray = new ArrayList<String[]>();
-	    talkerListArray = (ArrayList<String[]>)so.getAttribute("talkerListAC");
-		
-		
-		/*********************************************************************
-		* Target: Remove the user from video list before disconnect
-		* Added by: Situ
-		******************/
-		removeVideoList(conn.getClient().getId(), scope.getName());
-		/*********************************************************************/
-		
-	    for (int i = 0; i < talkerListArray.size(); i++) {
-	    	if((talkerListArray.get(i))[0] == conn.getClient().getId()){
-	    		// remove user from shared object
-	    	    talkerListArray.remove(i);
-	    		break;
-	    	}
-	    }
-	    // set array on shared object
-	    so.setAttribute("talkerListAC", talkerListArray);
-		
-	    // remove user from database
-		
+		if(so != null){
+			ArrayList<String[]> talkerListArray = new ArrayList<String[]>();
+			talkerListArray = (ArrayList<String[]>)so.getAttribute("talkerListAC");
+	    	
+		    for (int i = 0; i < talkerListArray.size(); i++) {
+		    	if((talkerListArray.get(i))[0] == conn.getClient().getId()){
+		    		// remove user from shared object
+		    	    talkerListArray.remove(i);
+		    		break;
+		    	}
+		    }
+			// set array on shared object
+		    so.setAttribute("talkerListAC", talkerListArray);
+			/*********************************************************************
+			* Target: Remove the user from video list before disconnect
+			* Added by: Situ
+			******************/
+		   removeVideoList(conn.getClient().getId(), scope.getName());
+			/*********************************************************************/
+		}
 	}	
 	
     /*
 	 * send a public message msg from from_pseudo to ALL users
 	 */
-	public void send_msgtoroom(String username, String topicid, String msg) {
+	public void send_msgtoroom(String userid, String username, String topicid, String msg) {
 		ServiceUtils.invokeOnAllConnections (getChildScope(topicid), "receivePublicMsg", new Object[] {username, msg} );
-        // store message in database - user id, topicid, message
+        
+		// store message in database - user id, topicid, message
+		TalkDBUtil.saveComment(Integer.parseInt(topicid), userid, msg);
 	}
 	
 	/**************************************************************
@@ -142,14 +146,11 @@ public class Application extends MultiThreadedApplicationAdapter
 		String shareObjectName = "videoListSO-"+topicID;
 		String videoListName = "videoListAC";
 		ArrayList<String> videoList = new ArrayList<String>();
-		ISharedObject so = getSharedObject(scope, shareObjectName); 
+	    ISharedObject so = getSharedObject(scope, shareObjectName); 
 				
 		videoList = (ArrayList<String>) so.getAttribute(videoListName);
 		videoList.remove(clientID);
-		so.setAttribute(videoListName, videoList);
+	    so.setAttribute(videoListName, videoList);
 	}
 	
-	public void testMethod(String clientID, String topicID){
-		log.error("Client ID is: " + clientID+"  Topic ID is: "+ topicID);
-	}
 }
