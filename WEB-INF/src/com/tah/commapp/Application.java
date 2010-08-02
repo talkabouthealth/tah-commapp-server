@@ -16,33 +16,20 @@ public class Application extends MultiThreadedApplicationAdapter
 {
     private static final Log log = LogFactory.getLog( Application.class );
     
-    /*public boolean appStart ( )
-    {
-    	log.error("***App Start***");
-        return true;
-    }
-
-    public void appStop ( )
-    {
-        log.error( "Red5First.appStop" );
-    }*/
-
     public boolean connect( IConnection conn , IScope scope, Object[] params )
     {
 		String userid = params[0].toString();
 		String username = params[1].toString();
 		String topicid = params[2].toString();
 		String topic = params[3].toString();
-		log.error( "TopicID: " + topicid);
-    	
-		
+			
 		ISharedObject so = getSharedObject(scope, "talkerListSO-" + topicid); 
 		ArrayList<String[]> talkerListArray = new ArrayList<String[]>();
-	    
+		    
 		if (so == null) {
-			log.error( "Shared object is null, creating object and adding username");
-	    	
-    	    // create shared object
+			//log.error( "Shared object is null, creating object and adding username");
+		   	
+	        // create shared object
 			createSharedObject(scope, "talkerListSO-" + topicid, false);
 			so = getSharedObject(scope, "talkerListSO-" + topicid); 
 			
@@ -50,14 +37,14 @@ public class Application extends MultiThreadedApplicationAdapter
 			so.setAttribute("talkerListAC", talkerListArray);
 			
 		} else {
-			log.error( "Adding username to shared object array");
-	    	
+			//log.error( "Adding username to shared object array");
+		   	
 			talkerListArray = (ArrayList<String[]>)so.getAttribute("talkerListAC");
 			talkerListArray.add(new String[] {conn.getClient().getId(), username});
 			
 			so.setAttribute("talkerListAC", talkerListArray);
 		}
-    	
+	    	
 		/*********************************************************************
 		*
 		*Target: new SharedObject for video list
@@ -71,7 +58,9 @@ public class Application extends MultiThreadedApplicationAdapter
 		}
 		/********************************************************************/
 		// add user to database to track live conversations - userid, topicid
-		TalkDBUtil.talkerConnected(Integer.parseInt(topicid), userid, username);
+		if (scope.getDepth() == 1) {
+		   	TalkDBUtil.talkerConnected(Integer.parseInt(topicid), userid, username);
+		}	
 		conn.setAttribute("userid", userid);
 		conn.setAttribute("username", username);
 		conn.setAttribute("topicid", topicid);
@@ -85,7 +74,9 @@ public class Application extends MultiThreadedApplicationAdapter
 	 */
 	public void disconnect(IConnection conn, IScope scope) {       
 		// remove user from database
-	    TalkDBUtil.talkerDisconnected(Integer.parseInt((String)conn.getAttribute("topicid")), (String)conn.getAttribute("userid"), (String)conn.getAttribute("username"));
+	    if (scope.getDepth() == 1) {
+	    	TalkDBUtil.talkerDisconnected(Integer.parseInt((String)conn.getAttribute("topicid")), (String)conn.getAttribute("userid"), (String)conn.getAttribute("username"));
+	    }
 	    
 		// get shared object
 		ISharedObject so = getSharedObject(scope, "talkerListSO-" + scope.getName());
@@ -125,7 +116,7 @@ public class Application extends MultiThreadedApplicationAdapter
 	 *            Update videoList: insert new client ID 
 	 **************************************************************/
 	public void addVideoList(String clientID, String topicID){
-		log.error("addVideoList at server side called ...");
+		//log.error("addVideoList at server side called ...");
 		IScope scope = getChildScope(topicID);
 		String shareObjectName = "videoListSO-"+topicID;
 		String videoListName = "videoListAC";
