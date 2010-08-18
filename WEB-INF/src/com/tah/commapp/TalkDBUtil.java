@@ -1,7 +1,9 @@
 package com.tah.commapp;
 
 import java.net.UnknownHostException;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 import org.bson.types.ObjectId;
 
@@ -91,7 +93,7 @@ public class TalkDBUtil {
 	}
 	
 	/* --------------- Conversation/Topic ----------------- */
-	public static void saveComment(int tid, String talkerId, String text) {
+	public static void saveMessage(int tid, String talkerId, String text) {
 		DBCollection topicsColl = getDB().getCollection("topics");
 		
 		DBRef talkerRef = new DBRef(getDB(), "talkers", new ObjectId(talkerId));
@@ -103,7 +105,35 @@ public class TalkDBUtil {
 		
 		DBObject tidDBObject = new BasicDBObject("tid", tid);
 		topicsColl.update(tidDBObject, 
-				new BasicDBObject("$push", new BasicDBObject("comments", commentDBObject)));
+				new BasicDBObject("$push", new BasicDBObject("messages", commentDBObject)));
+	}
+	
+	public static List<Message> loadMessages(int tid) {
+		DBCollection topicsColl = getDB().getCollection("topics");
+		
+		DBObject query = BasicDBObjectBuilder.start()
+			.add("tid", tid)
+			.get();
+			
+		DBObject topicDBObject = topicsColl.findOne(query, new BasicDBObject("messages", ""));
+		BasicDBList messagesDBList = (BasicDBList)topicDBObject.get("messages");
+		
+		List<Message> messagesList = new ArrayList<Message>();
+		if (messagesDBList == null) {
+			return messagesList;
+		}
+		
+		for (Object obj : messagesDBList) {
+			DBObject messageDBObject = (DBObject)obj;
+			Message message = new Message();
+			message.setText((String)messageDBObject.get("text"));
+			message.setTime((Date)messageDBObject.get("time"));
+			DBObject fromTalker = ((DBRef)messageDBObject.get("uid")).fetch();
+			message.setTalker((String)fromTalker.get("uname"));
+			
+			messagesList.add(message);
+		}
+		return messagesList;
 	}
 	
 	private static boolean isEmptyTopic(int tid) {
@@ -140,11 +170,13 @@ public class TalkDBUtil {
 //		TalkDBUtil.talkerConnected(1, "4c400cb43a10f305774734e8", "wewewe");
 //		TalkDBUtil.talkerDisconnected(1, "4c2cb43160adf3055c97d061", "kangaroo");
 //		TalkDBUtil.talkerDisconnected(1, "4c400cb43a10f305774734e8", "wewewe");
-//		TalkDBUtil.saveComment(1, "4c2cb43160adf3055c97d061", "First test comment :)");
+//		TalkDBUtil.saveMessage(1, "4c2cb43160adf3055c97d061", "Second!!");
 		
 //		TalkDBUtil.updateLiveTalkers("4c31e7a14e08f30586b71a50", "4c2cb43160adf3055c97d061", "kangaroo", false);
 		
 //		System.out.println(TalkDBUtil.isEmptyTopic("4c31e7a14e08f30586b71a50"));
+		
+		System.out.println(TalkDBUtil.loadMessages(1));
 		
 		System.out.println("finished");
 	}

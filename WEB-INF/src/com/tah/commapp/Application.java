@@ -109,7 +109,7 @@ public class Application extends MultiThreadedApplicationAdapter
 		ServiceUtils.invokeOnAllConnections (getChildScope(topicid), "receivePublicMsg", new Object[] {username, msg} );
         
 		// store message in database - user id, topicid, message
-		TalkDBUtil.saveComment(Integer.parseInt(topicid), userid, msg);
+		TalkDBUtil.saveMessage(Integer.parseInt(topicid), userid, msg);
 	}
 	
 	/**************************************************************
