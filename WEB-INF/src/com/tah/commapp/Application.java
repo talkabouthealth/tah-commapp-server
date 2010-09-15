@@ -1,6 +1,7 @@
 package com.tah.commapp;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -110,6 +111,19 @@ public class Application extends MultiThreadedApplicationAdapter
         
 		// store message in database - user id, topicid, message
 		TalkDBUtil.saveMessage(Integer.parseInt(topicid), userid, msg);
+	}
+
+	private List<Message> messagesList;
+	public void send_txthistory(String topicid)
+	{;
+		Message temp;
+		messagesList = TalkDBUtil.loadMessages(Integer.parseInt(topicid));
+		for(int i=0; i<messagesList.size();i++)
+		{
+			temp = messagesList.get(i);
+			//ServiceUtils.invokeOnAllConnections (getChildScope(topicid), "receivePublicMsg", new Object[] {username, msg} );
+			ServiceUtils.invokeOnConnection("receivePublicMsg", new Object[] {temp.getTalker(), temp.getText()});
+		}
 	}
 	
 	/**************************************************************
